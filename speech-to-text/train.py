@@ -139,15 +139,12 @@ training_args = Seq2SeqTrainingArguments(
     save_steps=1000,
     eval_steps=1000,
     logging_steps=25,
-    report_to=["tensorboard"],
+    report_to="wandb",
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
-    push_to_hub=False,
+    push_to_hub=True,
 )
-print(f'sanity check...')
-print(f'sample of train: {common_voice["train"][0]}')
-print(f'sample of test: {common_voice["test"][0]}')
 
 trainer = Seq2SeqTrainer(
     args=training_args,
@@ -156,7 +153,20 @@ trainer = Seq2SeqTrainer(
     eval_dataset=common_voice["test"],
     data_collator=data_collator,
     compute_metrics=compute_metrics,
-    tokenizer=processor.feature_extractor,
+    tokenizer=processor.tokenizer,
 )
 
 trainer.train()
+
+kwargs = {
+    "dataset_tags": "common_voice_11_0",
+    "dataset": "Common Voice 11.0",  # a 'pretty' name for the training dataset
+    "dataset_args": "config: th, split: test",
+    "language": "th",
+    "model_name": "Whisper Small th",  # a 'pretty' name for your model
+    "finetuned_from": "openai/whisper-small",
+    "tasks": "automatic-speech-recognition",
+    "tags": "hf-asr-leaderboard",
+}
+
+trainer.push_to_hub(**kwargs)
